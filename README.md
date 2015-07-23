@@ -1,4 +1,4 @@
 # PracticalMachineLearningProject
 
 This repository contains work done for the MOOC's project.  
-Data Science specialisation, "Practical MAchine Learning"
+Data Science specialisation, "Practical Machine Learning"
