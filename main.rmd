@@ -1,0 +1,73 @@
+# Predicting the manner in wich exercises were done.
+### Preobrazhenskiy Vladimir
+
+## Background
+Assuming you know the task, and there is no need to write it here. if not, please refer to "Practical Machine Learning" MOOC's project task description here:  
+https://class.coursera.org/predmachlearn-030/human_grading/view/courses/975199/assessments/4/submissions
+
+The goal is to build a model that will predict the classe feature. We know that classe is 5 level factor variable that represents if an exercise has been done correctly or with known mistakes (A - correct, B-E represent known mistakes). Please refer here for more details:  
+http://groupware.les.inf.puc-rio.br/har#weight_lifting_exercises
+
+## Importing Libraries
+```{r}
+library(caret)
+library(randomForest)
+```
+
+## Loading and preparing data
+```{r}
+# Reading the initial data. '#DIV/0' is interpreted as NA also
+testing = read.csv('pml-testing.csv', na.strings=c("NA","#DIV/0!", ""))
+training = read.csv('pml-training.csv', na.strings=c("NA","#DIV/0!", ""))
+
+# Let's take a look at the data we've loaded
+rbind(dim(testing), dim(training))
+
+# Now we'll try to reduce the amount of columns by removing those containing missing values only.
+training = training[,colSums(is.na(training)) == 0]
+testing = testing[,colSums(is.na(testing)) == 0]
+
+# Next step is to reject irrelevant data from the data frame (first 7 columns)
+training = training[,-1:-7]
+testing = testing[,-1:-7]
+
+# Now we can see how tables were compressed
+rbind(dim(testing), dim(training))
+```
+
+## Preparing a model
+In educational purposes it was decided to try out Random Forest algorithm.  
+This method has builtin bootstrapping mechanism so there was no need in additional coding for that.  
+To be able to assess final model two partitions were created from training set (subTraining and subTesting).
+```{r}
+# First of all we have to set SEED for reproducibility
+set.seed(1818)
+
+# Lets create some folds now
+subTrainingI = createDataPartition(y = training$classe, p = .75, list = F)
+subTraining = training[subTrainingI, ]
+subTesting = training[-subTrainingI, ]
+
+# Now let's train the model
+fitModel = randomForest(classe ~. , data=subTraining)
+
+# Now we look at the confusion martrix, as it should give us a feeling what will happen in testing dataset.
+confusionMatrix(predict(fitModel, newdata = subTesting), subTesting$classe)
+```
+Now it is important to highlight, that expected accuracy is 0.9957 and expected out-of-sample error is 1-0.9957 = 0.0043 (0.43%). It was calculated across subTesting test set.
+```{r}
+# Now we run it on testing dataset
+prediction2 = predict(fitModel, newdata = testing)
+prediction2
+
+#Looks like we've done here and ready to write a file for submission
+n = length(prediction2)
+for(i in 1:n){
+	filename = paste0("problem_id_",i,".txt")
+	write.table(prediction2[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+}
+```
+
+## References
+[1] http://groupware.les.inf.puc-rio.br/har
+
